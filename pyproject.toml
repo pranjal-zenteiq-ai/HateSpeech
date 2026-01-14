@@ -1,0 +1,15 @@
+[project]
+name = "hate-speech"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "pandas>=1.5",
+    "numpy>=1.25",
+    "scikit-learn>=1.2",
+    "xgboost>=1.7",
+    "joblib>=1.2",
+    "matplotlib>=3.7",
+    "seaborn>=0.12",
+]
