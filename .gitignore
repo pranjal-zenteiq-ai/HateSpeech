@@ -22,7 +22,7 @@ env/
 Thumbs.db
 
 # Lock files
-# uv.lock
+uv.lock
 poetry.lock
 
 # Models and artifacts
@@ -45,5 +45,13 @@ dist/
 
 # Misc
 *.swp
+*.swo
+*.tmp
 
+# CSV data
 *.csv
+
+# Generated plots and visualizations
+*.png
+*.jpg
+*.jpeg

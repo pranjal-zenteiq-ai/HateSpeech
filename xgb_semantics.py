@@ -6,7 +6,19 @@ from sklearn.metrics import classification_report, confusion_matrix, roc_auc_sco
 import joblib
 
 
-def train_xgb_semantic(df, save_path=None):
+def train_xgb_semantic(df, save_path=None, subset_size=None):
+    # Use stratified subset if specified
+    if subset_size and len(df) > subset_size:
+        df = (
+            df.groupby("Label", group_keys=False)
+            .apply(lambda x: x.sample(
+                int(subset_size * len(x) / len(df)),
+                random_state=42
+            ))
+            .reset_index(drop=True)
+        )
+        print(f"Using stratified subset of size {len(df)}")
+    
     texts = df["Content"].astype(str).tolist()
     labels = df["Label"].astype(int).values
 

@@ -6,3 +6,4 @@ joblib>=1.2
 matplotlib>=3.7
 seaborn>=0.12
 wordcloud>=1.9
+sentence-transformers>=2.2
