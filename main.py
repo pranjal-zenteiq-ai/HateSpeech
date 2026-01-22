@@ -1,143 +1,123 @@
+# import argparse
+# import sys
+# import pandas as pd
+
+# from lr import train_lr
+# from xgb_semantics import train_xgb_semantic   
+
+
+# def normalize_labels(df):
+#     df["moderation_detected"] = (
+#         df["moderation_detected"]
+#         .astype(str)
+#         .str.strip()
+#         .str.lower()
+#         .map({
+#             "true": 1,
+#             "false": 0,
+#             "1": 1,
+#             "0": 0,
+#             "yes": 1,
+#             "no": 0
+#         })
+#     )
+#     df = df.dropna(subset=["moderation_detected"])
+#     df["moderation_detected"] = df["moderation_detected"].astype(int)
+#     return df
+
+
+# def main():
+#     parser = argparse.ArgumentParser(description="Hate Speech Model Training")
+
+#     parser.add_argument("data", help="CSV with columns: text, moderation_detected")
+#     parser.add_argument("--model", choices=["lr", "xgb"], required=True)
+#     parser.add_argument("--save-model", default=None)
+#     parser.add_argument("--sample", type=int, default=None)
+
+#     args = parser.parse_args()
+
+#     df = pd.read_csv(args.data)
+
+#     if not {"text", "moderation_detected"}.issubset(df.columns):
+#         print("CSV must contain: text, moderation_detected")
+#         sys.exit(1)
+
+#     df = df.dropna(subset=["text", "moderation_detected"])
+#     df = normalize_labels(df)
+
+#     if args.sample:
+#         df = df.sample(n=min(args.sample, len(df)), random_state=42)
+#         print("Using sample:", len(df))
+
+#     print("\nLabel distribution:")
+#     print(df["moderation_detected"].value_counts())
+
+#     if args.model == "lr":
+#         train_lr(df, save_path=args.save_model)
+#     else:
+#         train_xgb_semantic(df, save_path=args.save_model)
+
+
+# if __name__ == "__main__":
+#     main()
 import argparse
 import sys
 import pandas as pd
 
-# Import LR training
-try:
-    from lr import train_lr
-    has_lr = True
-except Exception as e:
-    print("Warning: LR not available:", e)
-    has_lr = False
+from lr import train_lr
+from xgb_semantics2 import train_xgb_semantic_v2
+from xgb_tfidf import train_xgb_tfidf
 
-# Import semantic XGBoost training
-try:
-    from xgb_semantics import train_xgb_semantic
-    has_xgb = True
-except Exception as e:
-    print("Warning: XGB not available:", e)
-    has_xgb = False
-
-# Import final binary classifier (ensemble)
-try:
-    from BC import BinaryClassifier
-    has_bc = True
-except Exception as e:
-    print("Warning: BC not available:", e)
-    has_bc = False
-
-
-def clean_labels(df):
-    df["Label"] = (
-        df["Label"]
-        .astype(str)
-        .str.strip()
-        .str.replace(".0", "", regex=False)
-    )
-    df = df[df["Label"].isin(["0", "1"])]
-    df["Label"] = df["Label"].astype(int)
-    return df
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Hate Speech Classification")
+    parser = argparse.ArgumentParser(description="Hate Speech Model Training")
 
     parser.add_argument(
         "data",
-        help="CSV file (training/inference) or raw text (bc mode)"
+        help="Merged moderation CSV (must contain text, flagged, has_error)"
     )
-
     parser.add_argument(
-        "--model", "-m",
-        choices=["lr", "xgb", "bc"],
-        required=True,
-        help="lr=train TF-IDF LR | xgb=train semantic XGB | bc=final ensemble inference"
+        "--model",
+        choices=["lr", "xgb","xgb_tfidf"],
+        required=True
     )
-
-    parser.add_argument("--save-model", default=None)
-    parser.add_argument("--sample", type=int, default=None)
-
-    # BC-specific arguments
-    parser.add_argument("--lr-model", default="models/lr_tfidf.joblib")
-    parser.add_argument("--xgb-model", default="models/xgb_semantic.joblib")
-    parser.add_argument("--threshold", type=float, default=0.5)
+    parser.add_argument(
+        "--save-model",
+        default=None
+    )
+    parser.add_argument(
+        "--sample",
+        type=int,
+        default=None
+    )
 
     args = parser.parse_args()
 
-    # ----------------------------
-    # Training modes
-    # ----------------------------
-    if args.model in ["lr", "xgb"]:
-        print("Loading:", args.data)
-        df = pd.read_csv(args.data)
+    df = pd.read_csv(args.data)
 
-        if "Content" not in df.columns or "Label" not in df.columns:
-            print("CSV must contain 'Content' and 'Label'")
-            print("Found:", df.columns.tolist())
-            sys.exit(1)
+    required_cols = {"text", "flagged", "has_error"}
+    if not required_cols.issubset(df.columns):
+        print("Dataset must contain:", required_cols)
+        print("Found:", df.columns.tolist())
+        sys.exit(1)
 
-        df = df.dropna(subset=["Content", "Label"])
-        df = clean_labels(df)
+    if args.sample:
+        df = df.sample(n=min(args.sample, len(df)), random_state=42)
+        print("Using sample size:", len(df))
 
-        if args.sample:
-            df = df.sample(n=min(args.sample, len(df)), random_state=42)
-            print("Using sample:", len(df))
+    print("\nDataset overview:")
+    print("Total rows:", len(df))
+    print("Flagged distribution (raw):")
+    print(df["flagged"].value_counts(dropna=False))
+    print("Error rows:", df["has_error"].sum())
 
-        if "Content_int" in df.columns:
-            df = df.drop(columns=["Content_int"])
-
-        print("\n=== Label Distribution ===")
-        print(df["Label"].value_counts())
-        print("Total samples:", len(df))
-
-        if args.model == "lr":
-            if not has_lr:
-                print("LR module not found")
-                sys.exit(1)
-            train_lr(df, save_path=args.save_model)
-
-        else:
-            if not has_xgb:
-                print("XGB module not found")
-                sys.exit(1)
-            train_xgb_semantic(df, save_path=args.save_model)
-
-    # ----------------------------
-    # Final binary classifier (ensemble)
-    # ----------------------------
+    if args.model == "lr":
+        train_lr(df, save_path=args.save_model)
+    elif args.model == "xgb_tfidf":
+        train_xgb_tfidf(df, save_path=args.save_model)
     else:
-        if not has_bc:
-            print("BC module not found")
-            sys.exit(1)
-
-        # Determine input texts
-        if args.data.endswith(".csv"):
-            df = pd.read_csv(args.data)
-            if "Content" not in df.columns:
-                print("CSV must contain 'Content' column for bc mode")
-                sys.exit(1)
-            texts = df["Content"].astype(str).tolist()
-        else:
-            # Single raw text
-            texts = [args.data]
-
-        bc = BinaryClassifier(
-            lr_model_path=args.lr_model,
-            xgb_model_path=args.xgb_model
-        )
-
-        probs = bc.predict_proba(texts)
-        preds = bc.predict(texts, low=args.threshold)
-
-        print("\n=== Binary Classification Output ===")
-        for text, pred, prob in zip(texts, preds, probs):
-            print(f"[{pred}] prob={prob:.4f} → {text[:120]}...")
-        print("\n[TRI-LEVEL DISTRIBUTION]")
-        print("-" * 70)
-        print(f"SAFE:        {(y_tri == 0).sum():,}")
-        print(f"MAYBE_HATE:  {(y_tri == 1).sum():,}")
-        print(f"HATE:        {(y_tri == 2).sum():,}")
-
+        train_xgb_semantic_v2(df, save_path=args.save_model)
 
 
 if __name__ == "__main__":

@@ -1,5 +1,4 @@
 import os
-import numpy as np
 import xgboost as xgb
 import torch
 import joblib
@@ -16,18 +15,27 @@ from sklearn.metrics import (
 )
 
 
-def train_xgb_semantic(df, save_path=None, return_model=False):
+def train_xgb_semantic_v2(df, save_path=None, return_model=False):
     # ----------------------------
-    # Validation
+    # Sanity checks
     # ----------------------------
-    if not {"text", "moderation_detected"}.issubset(df.columns):
-        raise ValueError("Expected columns: text, moderation_detected")
+    required_cols = {"text", "flagged", "has_error"}
+    if not required_cols.issubset(df.columns):
+        raise ValueError(f"Dataset must contain columns: {required_cols}")
 
-    df = df.dropna(subset=["text", "moderation_detected"]).copy()
-    df["moderation_detected"] = df["moderation_detected"].astype(int)
+    # ----------------------------
+    # Filter usable rows
+    # ----------------------------
+    df = df.copy()
+    df = df[df["has_error"] == False]
+    df = df.dropna(subset=["flagged", "text"])
 
+    y = df["flagged"].astype(int).values
     texts = df["text"].astype(str).tolist()
-    y = df["moderation_detected"].values
+
+    print(f"Training samples after filtering: {len(df)}")
+    print("Label distribution:")
+    print(df["flagged"].value_counts())
 
     # ----------------------------
     # Sentence embeddings (GPU)
@@ -50,11 +58,17 @@ def train_xgb_semantic(df, save_path=None, return_model=False):
     # Train / Val / Test split
     # ----------------------------
     X_train, X_temp, y_train, y_temp = train_test_split(
-        X, y, test_size=0.3, stratify=y, random_state=42
+        X, y,
+        test_size=0.3,
+        stratify=y,
+        random_state=42
     )
 
     X_val, X_test, y_val, y_test = train_test_split(
-        X_temp, y_temp, test_size=0.5, stratify=y_temp, random_state=42
+        X_temp, y_temp,
+        test_size=0.5,
+        stratify=y_temp,
+        random_state=42
     )
 
     scale_pos_weight = (y_train == 0).sum() / (y_train == 1).sum()
@@ -68,13 +82,13 @@ def train_xgb_semantic(df, save_path=None, return_model=False):
     dtest = xgb.DMatrix(X_test, label=y_test)
 
     # ----------------------------
-    # XGBoost params (CORRECT for your build)
+    # XGBoost params (GPU-safe)
     # ----------------------------
     params = {
         "objective": "binary:logistic",
         "eval_metric": "auc",
-        "tree_method": "hist",   # ✅ REQUIRED
-        "device": "cuda",        # ✅ ENABLES GPU
+        "tree_method": "hist",
+        "device": "cuda",
         "max_depth": 5,
         "eta": 0.05,
         "subsample": 0.8,
@@ -85,7 +99,7 @@ def train_xgb_semantic(df, save_path=None, return_model=False):
         "seed": 42
     }
 
-    print("Training XGBoost with early stopping...")
+    print("Training XGBoost (semantic model)...")
     model = xgb.train(
         params=params,
         dtrain=dtrain,
@@ -108,12 +122,12 @@ def train_xgb_semantic(df, save_path=None, return_model=False):
     print(classification_report(y_test, preds, digits=4))
 
     roc_auc = roc_auc_score(y_test, probs)
-    print(f"\nROC AUC: {roc_auc:.4f}")
-
     pr_auc = average_precision_score(y_test, probs)
-    print(f"PR AUC: {pr_auc:.4f}")
 
-    print("\nThreshold analysis (HATE class):")
+    print(f"\nROC AUC: {roc_auc:.4f}")
+    print(f"PR AUC:  {pr_auc:.4f}")
+
+    print("\nThreshold analysis:")
     for th in [0.3, 0.4, 0.5]:
         th_preds = (probs >= th).astype(int)
         p = precision_score(y_test, th_preds)
