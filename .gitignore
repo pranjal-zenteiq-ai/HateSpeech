@@ -1,0 +1,137 @@
+# ===============================
+# Python bytecode & cache
+# ===============================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+.eggs/
+.cache/
+
+# ===============================
+# Virtual environments
+# ===============================
+venv/
+.venv/
+env/
+.env/
+env.*/
+pyvenv.cfg
+
+# ===============================
+# Jupyter / notebooks
+# ===============================
+.ipynb_checkpoints/
+
+# ===============================
+# Logs & runtime files
+# ===============================
+*.log
+*.out
+*.err
+
+# ===============================
+# Data files (IMPORTANT)
+# ===============================
+*.csv
+*.tsv
+*.parquet
+*.jsonl
+*.json
+*.db
+*.sqlite3
+
+# ===============================
+# Model artifacts
+# ===============================
+models/
+checkpoints/
+*.pt
+*.pth
+*.ckpt
+*.onnx
+*.bin
+
+# ===============================
+# Experiment outputs
+# ===============================
+results/
+outputs/
+metrics/
+reports/
+*.txt
+
+# ===============================
+# Plots & images
+# ===============================
+*.png
+*.jpg
+*.jpeg
+*.svg
+*.pdf
+
+# ===============================
+# Build & distribution
+# ===============================
+build/
+dist/
+wheelhouse/
+pip-wheel-metadata/
+
+# ===============================
+# IDE / Editor
+# ===============================
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ===============================
+# OS-specific
+# ===============================
+.DS_Store
+Thumbs.db
+
+# ===============================
+# Test / coverage
+# ===============================
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ===============================
+# Secrets / credentials
+# ===============================
+.env
+.env.*
+*.key
+*.pem
+*.crt
+
+# ===============================
+# Temporary files
+# ===============================
+tmp/
+temp/
+*.tmp
+
+
+# Virtual environments
+.venv/
+venv/
+env/
+.env/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Data
+*.csv
+
+# Outputs / results
+*.png
+*.txt
+models/
