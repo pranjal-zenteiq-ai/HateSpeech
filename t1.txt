@@ -1,0 +1,40 @@
+Best Params: {'clf__C': 1.0, 'clf__penalty': 'l2', 'tfidf__max_features': 30000, 'tfidf__ngram_range': (1, 2)}
+
+Confusion Matrix
+[[60733 11586]
+ [ 3118 12743]]
+
+Classification Report
+              precision    recall  f1-score   support
+
+           0     0.9512    0.8398    0.8920     72319
+           1     0.5238    0.8034    0.6341     15861
+
+    accuracy                         0.8333     88180
+   macro avg     0.7375    0.8216    0.7631     88180
+weighted avg     0.8743    0.8333    0.8456     88180
+
+
+ROC AUC: 0.9036
+
+
+
+
+Best Params: {'clf__C': 1.0, 'clf__penalty': 'l2', 'tfidf__max_features': 30000, 'tfidf__ngram_range': (1, 2)}
+
+Confusion Matrix
+[[60733 11586]
+ [ 3118 12743]]
+
+Classification Report
+              precision    recall  f1-score   support
+
+           0     0.9512    0.8398    0.8920     72319
+           1     0.5238    0.8034    0.6341     15861
+
+    accuracy                         0.8333     88180
+   macro avg     0.7375    0.8216    0.7631     88180
+weighted avg     0.8743    0.8333    0.8456     88180
+
+
+ROC AUC: 0.9036
